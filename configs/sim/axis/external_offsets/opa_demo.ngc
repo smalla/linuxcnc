@@ -1,0 +1,13 @@
+        #<r> =    1
+    #<frate> = 2000
+     #<revs> =  100
+
+g92 C 0
+#<C_save> = #5216
+#<C_new> = [#<C_save> MOD 360]
+g92.1
+g10l20p1 C #<C_new>
+
+g0 x0 z0
+o<ccircle> call [#<r>][#<frate>][#<revs>]
+m2

@@ -1,0 +1,48 @@
+o<ccircle> sub
+        #<r> = #1 (= 1    radius)
+    #<frate> = #2 (= 2000 feedrate)
+     #<revs> = #3 (= 2    +/-Revs)
+
+#<ct>  = [#<revs> * 360]
+#<z> = 0
+#<c> = 0
+
+
+;------------------------------------
+g92 C 0
+#<C_save> = #5216
+#<C_new> = [#<C_save> MOD 360]
+o<r1> if [#<C_save> lt 0]
+          #<C_new> = [#<C_new> -360]
+o<r1> endif
+g92.1
+g10l20p1 C #<C_new>
+;------------------------------------
+
+(debug, one moment --> C#<c>)
+g0 c#<c>
+g0 x#<r> z#<z>
+m68 e0 q#<r> ; set radius for eoffsets
+(debug, Enable offsets, s to continue)
+m1 ; optional stop
+m111
+
+f#<frate>
+g1 c[#<revs> * 360]
+(debug, Disable offsets, s to continue)
+m1 ; optional stop
+g0 x0
+
+;------------------------------------
+g92 C 0
+#<C_save> = #5216
+#<C_new> = [#<C_save> MOD 360]
+o<r2> if [#<C_save> lt 0]
+          #<C_new> = [#<C_new> -360]
+o<r2> endif
+g92.1
+g10l20p1 C #<C_new>
+;------------------------------------
+m111
+o<ccircle> endsub
+
