@@ -161,21 +161,11 @@ Debian-7.*|Raspbian-7) # Wheezy
         PYTHON_PACKAGING=dh_pysupport
 	TCLTK_VERSION=8.5
 	;;
-Ubuntu-1[67].*|LinuxMint-18*) # Xenial/16.04_LTS through (---tbd---/17.10 FIXME-IN-FUTURE), LinuxMint 18 through 18.x
+Ubuntu-1[67].*|LinuxMint-18*) # Xenial/16.04_LTS through ---tbd---/17.10 (FIXME-IN-FUTURE), LinuxMint 18 through 18.3
 	;;
-Ubuntu-1[45].*|LinuxMint-17*) # Trusty/14.04_LTS through Wily/15.10, LinuxMint 17 through 17.x
+Ubuntu-1[45].*|LinuxMint-17*) # Trusty/14.04_LTS through Wily/15.10, LinuxMint 17 through 17.3
 	;;
-Ubuntu-12.04*) # Precise Pangolin (12.04_LTS) (Quantal/12.10, Raring/13.04, and Saucy/13.10 are no longer supported)
-        EXTRA_BUILD=libgnomeprintui2.2-dev
-        MODUTILS_DEPENDS=module-init-tools
-        PYTHON_PACKAGING_DEPENDS=python-support
-        PYTHON_PACKAGING=dh_pysupport
-	TCLTK_VERSION=8.5
-	;;
-# Shouldn't we either drop 11.04, or still support Lucid/10.04_LTS? (Or maybe just support 10.04?)
-# Let's see what the buildbot has to say, Lucid/10.04 is still there.
-# Ubuntu-11.*) # Natty Narwhal/11.04
-Ubuntu-10.04*) # Lucid Lynx/10.04_LTS
+Ubuntu-12.04*) # Precise Pangolin/12.04_LTS (Quantal/12.10, Raring/13.04, and Saucy/13.10 are no longer supported)
         EXTRA_BUILD=libgnomeprintui2.2-dev
         MODUTILS_DEPENDS=module-init-tools
         PYTHON_PACKAGING_DEPENDS=python-support
