@@ -1,0 +1,149 @@
+component whb04b_util "whb04b convenience utility";
+description """Provides logic for a start/pause button and an interface
+to halui.program.is_paused, is_idle, is_running to generate outputs for
+halui.program.pause, resume, run.
+
+Includes 4 simple lowpass filters with coef and scale pins.  The coef value should
+be 0 <= coef <=1, smaller coef values slow response.
+
+Includes 4 multiplexers to manage ini hal pins ini.N.max_acceleration.  The amux.N.in0
+inputs are used by default, the amux.N.in1 inputs are selected when the is-manual
+pin is True.
+
+The pin named is-manual is typically connected to halui.mode.is-manual.
+
+The pin named jogenable-off is not used.
+""";
+
+pin in bit start_or_pause;
+pin in bit is_paused;
+pin in bit is_idle;
+pin in bit is_running;
+pin out bit pause;
+pin out bit resume;
+pin out bit run;
+
+// integer low pass filters (see ilowpass.comp)
+pin in s32 in0;
+pin in s32 in1;
+pin in s32 in2;
+pin in s32 in3;
+pin in s32 in4;
+pin in s32 in5;
+
+pin out s32 out0;
+pin out s32 out1;
+pin out s32 out2;
+pin out s32 out3;
+pin out s32 out4;
+pin out s32 out5;
+
+pin in float scale0 = 1.0;
+pin in float scale1 = 1.0;
+pin in float scale2 = 1.0;
+pin in float scale3 = 1.0;
+pin in float scale4 = 1.0;
+pin in float scale5 = 1.0;
+
+pin in float coef0 = 1.0;
+pin in float coef1 = 1.0;
+pin in float coef2 = 1.0;
+pin in float coef3 = 1.0;
+pin in float coef4 = 1.0;
+pin in float coef5 = 1.0;
+
+pin in  float divide_by_k_in;
+pin out float divide_by_k_out;
+pin in  float k = 1.0;
+
+pin in  bit   is_manual;
+pin in  bit   jogenable_off;
+
+pin in  float amux0_in0;
+pin in  float amux1_in0;
+pin in  float amux2_in0;
+pin in  float amux3_in0;
+pin in  float amux4_in0;
+pin in  float amux5_in0;
+
+pin in  float amux0_in1;
+pin in  float amux1_in1;
+pin in  float amux2_in1;
+pin in  float amux3_in1;
+pin in  float amux4_in1;
+pin in  float amux5_in1;
+
+pin out float amux0_out;
+pin out float amux1_out;
+pin out float amux2_out;
+pin out float amux3_out;
+pin out float amux4_out;
+pin out float amux5_out;
+
+option data xhc_data;
+
+variable double value0;
+variable double value1;
+variable double value2;
+variable double value3;
+variable double value4;
+variable double value5;
+
+
+function _;
+license "GPL";
+;;
+#include <rtapi_math.h>
+
+typedef struct { int old_start_or_pause; } xhc_data;
+
+FUNCTION(_) {
+
+    if (k == 0) {
+      divide_by_k_out = 1e99;
+    } else {
+      divide_by_k_out = divide_by_k_in / k;
+    }
+
+    // protect so that 0 <= coef <= 1
+    value0 += (in0 - value0) * (fabs(coef0) < 1 ? fabs(coef0) : 1);
+    value1 += (in1 - value1) * (fabs(coef1) < 1 ? fabs(coef1) : 1);
+    value2 += (in2 - value2) * (fabs(coef2) < 1 ? fabs(coef2) : 1);
+    value3 += (in3 - value3) * (fabs(coef3) < 1 ? fabs(coef3) : 1);
+    value4 += (in4 - value4) * (fabs(coef4) < 1 ? fabs(coef4) : 1);
+    value5 += (in5 - value5) * (fabs(coef5) < 1 ? fabs(coef5) : 1);
+
+    out0 =  ceil(value0 * scale0 - .5);
+    out1 =  ceil(value1 * scale1 - .5);
+    out2 =  ceil(value2 * scale2 - .5);
+    out3 =  ceil(value3 * scale3 - .5);
+    out4 =  ceil(value4 * scale4 - .5);
+    out5 =  ceil(value5 * scale5 - .5);
+
+    // accel muxes:
+    if (is_manual) {
+        amux0_out = amux0_in1;
+        amux1_out = amux1_in1;
+        amux2_out = amux2_in1;
+        amux3_out = amux3_in1;
+        amux4_out = amux4_in1;
+        amux5_out = amux5_in1;
+    } else {
+        amux0_out = amux0_in0;
+        amux1_out = amux1_in0;
+        amux2_out = amux2_in0;
+        amux3_out = amux3_in0;
+        amux4_out = amux4_in0;
+        amux5_out = amux5_in0;
+    }
+
+    if (data.old_start_or_pause == start_or_pause) return;
+    data.old_start_or_pause = start_or_pause;
+    if (!start_or_pause) {
+        pause = run = resume = 0;
+        return;
+    }
+    if (is_paused)  {pause = 0; run = 0; resume = 1; }
+    if (is_running) {pause = 1; run = 0; resume = 0; }
+    if (is_idle)    {pause = 0; run = 1; resume = 0; }
+}
