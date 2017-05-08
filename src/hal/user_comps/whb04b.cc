@@ -342,14 +342,18 @@ void decantor (int cantored)
 
 void generate_combined_button_codes ()
 {
-	int i,j;
+	int i,j,k;
+	//int maxcode = cantor(NB_MAX_BUTTONS,NB_MAX_BUTTONS);
 	for (i=0; i<NB_MAX_BUTTONS; i++) {
-		if (strcmp("TRUE", xhc.buttons[i].fn) == 0 ) {
-			xhc.buttons[i].code= cantor(xhc.buttons[i].code,0);
+		if (strcmp("TRUE", xhc.buttons[i].fn) != 0 ) {
+			k = cantor(xhc.buttons[i].code,0);
+			xhc.buttons[k].code = cantor(xhc.buttons[i].code,0);
+			xhc.buttons[k].pin_name = xhc.buttons[i].pin_name;
 		} else {
 			for (j=0; j<NB_MAX_BUTTONS; j++) {
 				if  (xhc.buttons[i].code != xhc.buttons[j].code ) {
-					xhc.buttons[i].code= cantor(xhc.buttons[i].code,xhc.buttons[j].code);
+					xhc.buttons[k].code= cantor(xhc.buttons[i].code,xhc.buttons[j].code);
+					xhc.buttons[k].pin_name = xhc.buttons[i].pin_name+'+'+xhc.buttons[j].pin_name;
 				}
 			}
 		}
