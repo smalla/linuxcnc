@@ -46,6 +46,7 @@ int button1,button2;
 typedef struct {
 	char pin_name[256];
 	unsigned int code;
+	unsigned int calculated_code;
 	char fn[4];
 } xhc_button_t;
 
@@ -329,7 +330,7 @@ int cantor ( char hex_button1, char hex_button2)
 	return cantored;
 }
 
-int decantor (int cantored)
+void decantor (int cantored)
 {
 	int w;
 //	double w;
