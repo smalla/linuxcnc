@@ -72,7 +72,7 @@ typedef enum {
 
 
 #define NB_MAX_BUTTONS 36
-
+#define calculated_max_buttons ((2*NB_MAX_BUTTONS)*(2*NB_MAX_BUTTONS+1)/2+NB_MAX_BUTTONS)
 #define STEPSIZE_BYTE 35
 #define FLAGS_BYTE    36
 
@@ -182,7 +182,8 @@ typedef struct {
 	xhc_hal_t *hal;
 	xhc_axis_t axis;
 	xhc_rate_t rate;
-	xhc_button_t buttons[NB_MAX_BUTTONS];
+//	xhc_button_t buttons[NB_MAX_BUTTONS];
+	xhc_button_t buttons[calculated_max_buttons];
 	unsigned char button_code;
 //	unsigned char button2_code;
 	bool fnpressed;
@@ -337,23 +338,27 @@ void decantor (int cantored)
 	w=floor((sqrt (8*cantored+1)-1)/2);
 	button1=cantored-((w*w+w)/2);
 	button2=w-button1;
-	return 0;	
+//	return 0;	
 }
 
 void generate_combined_button_codes ()
 {
 	int i,j,k;
+//	char* temp;
 	//int maxcode = cantor(NB_MAX_BUTTONS,NB_MAX_BUTTONS);
 	for (i=0; i<NB_MAX_BUTTONS; i++) {
 		if (strcmp("TRUE", xhc.buttons[i].fn) != 0 ) {
 			k = cantor(xhc.buttons[i].code,0);
-			xhc.buttons[k].code = cantor(xhc.buttons[i].code,0);
-			xhc.buttons[k].pin_name = xhc.buttons[i].pin_name;
+			xhc.buttons[k].calculated_code = cantor(xhc.buttons[i].code,0);
+	printf("icode:%x ,", xhc.buttons[i].code);
+	printf("k:%d, i:%d, pin-name: %s", k,i, xhc.buttons[i].pin_name);
+//			xhc.buttons[k].pin_name = xhc.buttons[i].pin_name;
 		} else {
 			for (j=0; j<NB_MAX_BUTTONS; j++) {
+				k = cantor(xhc.buttons[i].code,xhc.buttons[j].code);
 				if  (xhc.buttons[i].code != xhc.buttons[j].code ) {
-					xhc.buttons[k].code= cantor(xhc.buttons[i].code,xhc.buttons[j].code);
-					xhc.buttons[k].pin_name = xhc.buttons[i].pin_name+'+'+xhc.buttons[j].pin_name;
+					xhc.buttons[k].code = cantor(xhc.buttons[i].code,xhc.buttons[j].code);
+//					xhc.buttons[k].pin_name = xhc.buttons[i].pin_name+'+'+xhc.buttons[j].pin_name;
 				}
 			}
 		}
@@ -943,7 +948,7 @@ int main (int argc,char **argv)
 	hal_ready(hal_comp_id);
 	hal_ready_done = true;
 	}
-
+	generate_combined_button_codes ();
 	while (!do_exit) {
 		//on reconnect wait for device to be gone
 		if (do_reconnect == 1) {

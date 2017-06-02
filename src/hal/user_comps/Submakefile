@@ -48,6 +48,16 @@ $(call TOOBJSDEPS, $(XHC_HB04_SRC)) : EXTRAFLAGS += $(LIBUSB10_CFLAGS)
 TARGETS += ../bin/xhc-hb04
 endif # HAVE_LIBUSB10
 
+ifdef HAVE_LIBUSB10
+WHB04B_SRC = hal/user_comps/whb04b.cc
+USERSRCS += $(WHB04B_SRC)
+$(call TOOBJSDEPS, $(WHB04B_SRC)) : EXTRAFLAGS += $(LIBUSB10_CFLAGS)
+../bin/whb04b: $(call TOOBJS, $(WHB04B_SRC)) ../lib/liblinuxcnchal.so.0 ../lib/liblinuxcncini.so.0
+	$(ECHO) Linking $(notdir $@)
+	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lm -lstdc++ $(LIBUSB10_LIBS)
+TARGETS += ../bin/whb04b
+endif # HAVE_LIBUSB10
+
 $(patsubst ./hal/user_comps/%,../include/%,$(wildcard ./hal/user_comps/*.h)): ../include/%.h: ./hal/user_comps/%.h
 	cp $^ $@
 $(patsubst ./hal/user_comps/%,../include/%,$(wildcard ./hal/user_comps/*.hh)): ../include/%.hh: ./hal/user_comps/%.hh
