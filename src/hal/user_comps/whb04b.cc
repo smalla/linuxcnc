@@ -324,19 +324,16 @@ void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
 }
 
 int cantor ( char hex_button1, char hex_button2)
-//int cantor ( int button1, int button2)
 {
 	int button1 = hex_button1;
 	int button2 = hex_button2;
 	int cantored=(button1+button2)*(button1+button2+1)/2+button2;
-//	printf("cantored: %d , b1: %x , b2: %x ", cantored, button1, button2);
 	return cantored;
 }
 
 void decantor (int cantored)
 {
 	int w;
-//	double w;
 	w=floor((sqrt (8*cantored+1)-1)/2);
 	button1=cantored-((w*w+w)/2);
 	button2=w-button1;
@@ -345,18 +342,15 @@ void decantor (int cantored)
 void generate_combined_button_codes ()
 {
 	int i,j,k,noofk=0;
-	//int maxcode = cantor(NB_MAX_BUTTONS,NB_MAX_BUTTONS);
-	for (i=NB_MAX_BUTTONS-1; i>=0 ; --i) {
+	for (i=NB_MAX_BUTTONS-1; i>=0 ; i--) {
 		if ((xhc.buttons[i].fn) == 0) {
 			k = cantor(xhc.buttons[i].code,0);
 			xhc.buttons[k].calculated_code = cantor(xhc.buttons[i].code,0);
 			xhc.buttons[k].fn = 0;
 			cantored_codes[noofk] = k;
 			noofk++;
-//	printf("k:%d, i:%d, 1XHC-Buttons K name: %s Iname: %s\n", k,i,xhc.buttons[k].pin_name,xhc.buttons[i].pin_name);
 			strncpy(xhc.buttons[k].pin_name, xhc.buttons[i].pin_name,20);
-//			xhc.buttons[i].pin_name.clear();
-//	printf("k:%d, i:%d, 2XHC-Buttons K Name: %s Iname: %s\n", k,i,xhc.buttons[k].pin_name,xhc.buttons[i].pin_name);
+			if ( i == 0 ) strcpy(xhc.buttons[i].pin_name,"");
 		} else {
 			for (j=NB_MAX_BUTTONS-1; j>=0 ;--j) {
 				k = cantor(xhc.buttons[i].code,xhc.buttons[j].code);
@@ -366,9 +360,11 @@ void generate_combined_button_codes ()
 //					printf("k:%d, i:%d, FN+ %d\n", k,i, xhc.buttons[k].fn);
 					cantored_codes[noofk] = k;
 					noofk++;
-					strncpy(xhc.buttons[k].pin_name, xhc.buttons[j].pin_name,20);
-//					xhc.buttons[k].pin_name.append('-fn');
-//					strcpy (xhc.buttons[k].pin_name, "-fn");
+//					char *tempname = (char*)malloc(strlen(xhc.buttons[j].pin_name)+4);
+//					strcpy(tempname, xhc.buttons[j].pin_name);
+//					strcpy(tempname+strlen(xhc.buttons[j].pin_name),"-fn");
+//					strncpy(xhc.buttons[k].pin_name, tempname,20);
+					strncpy(xhc.buttons[k].pin_name, xhc.buttons[j].pin_name, 20);
 				}
 			}
 		}
@@ -556,7 +552,7 @@ void cb_response_in(struct libusb_transfer *transfer)
 	if (transfer->actual_length > 0) {
 		if (simu_mode) hexdump(in_buf, transfer->actual_length);
 
-		xhc.button_code =  cantor(in_buf[2],in_buf[3]);
+		xhc.button_code = cantor(in_buf[2],in_buf[3]);
 		button1 = in_buf[2];
 		button2 = in_buf[3];
 
@@ -582,54 +578,48 @@ void cb_response_in(struct libusb_transfer *transfer)
 
 		for ( int k : cantored_codes) {
 		    i=k;
-//			printf("FNstate:%d i:%d k:%d \n", xhc.buttons[i].fn,i,k);
-//		printf("I: %d K: %d \n", i,k);
-//		printf("%s Listed \n", xhc.buttons[i].pin_name);
-//		for (i=0; i<CALCULATED_MAX_BUTTONS; i++) {
+//			printf("1xhc.button_code: %d buttons i: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
 			if (!xhc.hal->button_pin[i]) continue;
-//			printf("FN:%d i:%d k:%d \n", xhc.buttons[i].fn,i,k);
-			if ( (xhc.buttons[i].fn) == 1 ) {
+/*			if ( (xhc.buttons[i].fn) == 1 ) {
 				// if a function button hit do
 				xhc.buttons[i].calculated_code = cantor(13, xhc.buttons[i].code);
-//				printf("%s pressed \n", xhc.buttons[i].pin_name);
-//				printf("%d FN pressed \n", xhc.buttons[i].fn);
+				printf("2xhc.button_code: %d buttons calc-code: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
 			}else 
 			{
 				xhc.buttons[i].calculated_code = cantor(xhc.buttons[i].code,0);
-//				printf("%s pressed \n", xhc.buttons[i].pin_name);
-//				printf("FN: %d \n", xhc.buttons[i].fn);
+				printf("3xhc.button_code: %d buttons calc-code: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
 			}
-//			printf("I: %d K: %d \n", i,k);
+*/
 			*(xhc.hal->button_pin[i]) = (xhc.button_code == xhc.buttons[i].calculated_code);
 			if (strcmp("worigin-probez", xhc.buttons[i].pin_name) == 0) {
-				*(xhc.hal->zero_x) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_x);
-				*(xhc.hal->zero_y) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_y);
-				*(xhc.hal->zero_z) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_z);
-				*(xhc.hal->zero_a) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_a);
-				*(xhc.hal->zero_b) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_b);
-				*(xhc.hal->zero_c) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_c);
-            		}
+				*(xhc.hal->zero_x) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_x);
+				*(xhc.hal->zero_y) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_y);
+				*(xhc.hal->zero_z) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_z);
+				*(xhc.hal->zero_a) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_a);
+				*(xhc.hal->zero_b) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_b);
+				*(xhc.hal->zero_c) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_c);
+			}
 			if (strcmp("morigin-out7", xhc.buttons[i].pin_name) == 0) {
-				*(xhc.hal->gotozero_x) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_x);
-				*(xhc.hal->gotozero_y) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_y);
-				*(xhc.hal->gotozero_z) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_z);
-				*(xhc.hal->gotozero_a) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_a);
-				*(xhc.hal->gotozero_b) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_b);
-				*(xhc.hal->gotozero_c) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_c);
+				*(xhc.hal->gotozero_x) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_x);
+				*(xhc.hal->gotozero_y) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_y);
+				*(xhc.hal->gotozero_z) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_z);
+				*(xhc.hal->gotozero_a) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_a);
+				*(xhc.hal->gotozero_b) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_b);
+				*(xhc.hal->gotozero_c) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_c);
 			}
 			if (strcmp("half-safez", xhc.buttons[i].pin_name) == 0) {
-				*(xhc.hal->half_x) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_x);
-				*(xhc.hal->half_y) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_y);
-				*(xhc.hal->half_z) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_z);
-				*(xhc.hal->half_a) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_a);
-				*(xhc.hal->half_b) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_b);
-				*(xhc.hal->half_c) = (xhc.button_code == xhc.buttons[i].code) && (xhc.axis == axis_c);
+				*(xhc.hal->half_x) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_x);
+				*(xhc.hal->half_y) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_y);
+				*(xhc.hal->half_z) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_z);
+				*(xhc.hal->half_a) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_a);
+				*(xhc.hal->half_b) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_b);
+				*(xhc.hal->half_c) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_c);
 
 			}
 
 			if (simu_mode && *(xhc.hal->button_pin[i])) {
-//				printf("%s pressed ", xhc.buttons[i].pin_name);
-//				printf("button_code: %d b1: %d b2: %d\n", xhc.button_code,button1,button2);
+				printf("%s pressed, code: %d ", xhc.buttons[i].pin_name,xhc.buttons[i].calculated_code);
+//				printf("Axis: %x, Rate: %x \n", xhc.axis,xhc.rate);
 			//	printf("button_pin: %d ", xhc.hal->button_pin[i]);
 			}
 //}
@@ -780,8 +770,7 @@ static void hal_setup()
 
     for ( int k : cantored_codes ) {
 	i=k;
-//    for (i=0; i<CALCULATED_MAX_BUTTONS; i++) {
-//printf ("hal-pin-name: %s \n", xhc.buttons[i].pin_name);
+
         if (!xhc.buttons[i].pin_name[0]) continue;
 
         if (strcmp("worigin-probez", xhc.buttons[i].pin_name) == 0) {
@@ -811,9 +800,11 @@ static void hal_setup()
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->half_c), hal_comp_id, "%s.%s-c", modname, xhc.buttons[i].pin_name);
 		continue;
         }
-        r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->button_pin[i]), hal_comp_id, "%s.%s", modname, xhc.buttons[i].pin_name);
-        if (strcmp("button-step", xhc.buttons[i].pin_name) == 0) xhc.button_step = xhc.buttons[i].code;
-        if (strcmp("fn", xhc.buttons[i].pin_name) != 0) {
+	if (xhc.buttons[i].fn == 0) {
+		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->button_pin[i]), hal_comp_id, "%s.%s", modname, xhc.buttons[i].pin_name);
+	}
+//        if (strcmp("button-step", xhc.buttons[i].pin_name) == 0) xhc.button_step = xhc.buttons[i].code;
+        if (xhc.buttons[i].fn == 1) {
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->button_pin[i]), hal_comp_id, "%s.%s-fn", modname, xhc.buttons[i].pin_name);
         }
 
@@ -908,7 +899,7 @@ static void Usage(char *name)
     fprintf(stderr, "     5: 1,10,50,100,1000\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Configuration file section format:\n");
-    fprintf(stderr, "[XHC-HB04]\n");
+    fprintf(stderr, "[WHB04B]\n");
     fprintf(stderr, "BUTTON=XN:button-thenameN\n");
     fprintf(stderr, "...\n");
     fprintf(stderr, "    where XN=hexcode, button-thenameN=nameforbutton\n");

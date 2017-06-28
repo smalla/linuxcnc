@@ -38,7 +38,7 @@ source [file join $::env(HALLIB_DIR) hal_procs_lib.tcl]
 #       SYSFS{idProduct}=="eb70", SYSFS{idVendor}=="10ce", MODE="666", OWNER="root", GROUP="users"
 #       or (for ubuntu12 and up):
 #       ATTR{idProduct}=="eb70",  ATTR{idVendor}=="10ce",  MODE="666", OWNER="root", GROUP="users"
-#    4) For jogmode==vnormal (man motion -- see axis.N.jog-vel-mode),
+#    4) For jogmode==vnormal (man motion -- see joint.N.jog-vel-mode @axN@.jog-vel-mode),
 #       the max movement is limited by the machine velocity and acceleration limits
 #       such that delta_x = 0.5 * vmax**2/accelmx
 #       so for sim example:
@@ -83,134 +83,133 @@ source [file join $::env(HALLIB_DIR) hal_procs_lib.tcl]
 #-----------------------------------------------------------------------
 
 proc is_uniq {list_name} {
-  set tmp(xxxxxxxx) "" ;# make an array first
-  foreach item $list_name {
-    if {[array names tmp $item] == $item} {
-      return 0 ;# not unique
-    }
-    set tmp($item) $item
-  }
-  return 1 ;# unique
+	set tmp(xxxxxxxx) "" ;# make an array first
+	foreach item $list_name {
+		if {[array names tmp $item] == $item} {
+			return 0 ;# not unique
+		}
+		set tmp($item) $item
+	}
+	return 1 ;# unique
 } ;# is_uniq
 
 proc connect_pins {} {
-  foreach bname [lsort [array names ::WHB04B_BUTTONS]] {
-    set thepin $::WHB04B_BUTTONS($bname)
-    set thepin [lindex $thepin 0]
+	foreach bname [lsort [array names ::WHB04B_BUTTONS]] {
+		set thepin $::WHB04B_BUTTONS($bname)
+		set thepin [lindex $thepin 0]
 
-    if {"$thepin" == "\"\""} {
-      #puts stderr "$::progname: no pin defined for <$bname>"
-      continue
-    }
-    # this pin is can specify std behavior
-    if {   ([string tolower $bname] == "start-pause")
-        && ([string tolower $thepin] == "std_start_pause")
-       } {
-      std_start_pause_button
-      puts stderr "$::progname: using std_start_pause_button"
-      continue
-    }
-    # these are warnings in the ini file examples but aren't real pins
-    if {[string tolower "$thepin"] == "caution"} {
-      puts stderr "$::progname: skipping button $bname marked <$thepin>"
-      continue
-    }
-    set fullbname whb04b.button-$bname
-    if !$::whb04b_quiet {
-      if ![pin_exists $fullbname] {
-        puts stderr "$::progname: !!! <$fullbname> pin does not exist, continuing"
-        continue
-      }
-      if ![pin_exists $thepin] {
-        puts stderr "$::progname: !!! <$thepin> target pin does not exist, continuing"
-        continue
-      }
-    }
+		if {"$thepin" == "\"\""} {
+			#puts stderr "$::progname: no pin defined for <$bname>"
+			continue
+		}
+		# this pin is can specify std behavior
+		if {   ([string tolower $bname] == "start-pause")
+		&& ([string tolower $thepin] == "std_start_pause")
+		} {
+			std_start_pause_button
+			puts stderr "$::progname: using std_start_pause_button"
+			continue
+		}
+		# these are warnings in the ini file examples but aren't real pins
+		if {[string tolower "$thepin"] == "caution"} {
+		puts stderr "$::progname: skipping button $bname marked <$thepin>"
+		continue
+		}
+		set fullbname whb04b.$bname
+		if !$::whb04b_quiet {
+			if ![pin_exists $fullbname] {
+				puts stderr "$::progname: !!! <$fullbname> pin does not exist, continuing"
+				continue
+			}
+			if ![pin_exists $thepin] {
+				puts stderr "$::progname: !!! <$thepin> target pin does not exist, continuing"
+				continue
+			}
+		}
 
-    net pendant:$bname <= $fullbname => $thepin
-  }
+		net pendant:$bname <= $fullbname => $thepin
+	}
 } ;# connect_pins
 
 proc wheel_setup {jogmode} {
-  if [info exists ::WHB04B_CONFIG(mpg_accels)] {
-    set idx 0
-    foreach g $::WHB04B_CONFIG(mpg_accels) {
-      set g1 $g
-      if {$g < 0} {
-         set g [expr -1 * $g]
-         puts stderr "$::progname: mpg_accel #$idx must be positive was:$g1, is:$g"
-      }
-      set ::WHB04B_CONFIG(accel,$idx) $g
-      incr idx
-    }
-  }
+	if [info exists ::WHB04B_CONFIG(mpg_accels)] {
+		set idx 0
+		foreach g $::WHB04B_CONFIG(mpg_accels) {
+			set g1 $g
+			if {$g < 0} {
+				set g [expr -1 * $g]
+				puts stderr "$::progname: mpg_accel #$idx must be positive was:$g1, is:$g"
+			}
+			set ::WHB04B_CONFIG(accel,$idx) $g
+			incr idx
+		}
+	}
+# defaults if not in inifile:
+	set ::WHB04B_CONFIG(coef,0) 1.0
+	set ::WHB04B_CONFIG(coef,1) 1.0
+	set ::WHB04B_CONFIG(coef,2) 1.0
+	set ::WHB04B_CONFIG(coef,3) 1.0
+	set ::WHB04B_CONFIG(coef,4) 1.0
+	set ::WHB04B_CONFIG(coef,5) 1.0
+	if [info exists ::WHB04B_CONFIG(coefs)] {
+		set idx 0
+		foreach g $::WHB04B_CONFIG(coefs) {
+			set g1 $g
+			if {$g < 0} {
+				set g [expr -1 * $g]
+				puts stderr "$::progname: coef #$idx must be positive was:$g1, is:$g"
+			}
+			if {$g > 1} {
+				set g .5
+				puts stderr "$::progname: coef #$idx must < 1 coef was:$g1, is:$g"
+			}
+			set ::WHB04B_CONFIG(coef,$idx) $g
+			incr idx
+		}
+	}
+# defaults if not in inifile:
+	set ::WHB04B_CONFIG(scale,0) 1.0
+	set ::WHB04B_CONFIG(scale,1) 1.0
+	set ::WHB04B_CONFIG(scale,2) 1.0
+	set ::WHB04B_CONFIG(scale,3) 1.0
+	set ::WHB04B_CONFIG(scale,4) 1.0
+	set ::WHB04B_CONFIG(scale,5) 1.0
+	if [info exists ::WHB04B_CONFIG(scales)] {
+		set idx 0
+		foreach g $::WHB04B_CONFIG(scales) {
+			set ::WHB04B_CONFIG(scale,$idx) $g
+			incr idx
+		}
+	}
 
-  # defaults if not in inifile:
-  set ::WHB04B_CONFIG(coef,0) 1.0
-  set ::WHB04B_CONFIG(coef,1) 1.0
-  set ::WHB04B_CONFIG(coef,2) 1.0
-  set ::WHB04B_CONFIG(coef,3) 1.0
-  set ::WHB04B_CONFIG(coef,4) 1.0
-  set ::WHB04B_CONFIG(coef,5) 1.0
-  if [info exists ::WHB04B_CONFIG(coefs)] {
-    set idx 0
-    foreach g $::WHB04B_CONFIG(coefs) {
-      set g1 $g
-      if {$g < 0} {
-         set g [expr -1 * $g]
-         puts stderr "$::progname: coef #$idx must be positive was:$g1, is:$g"
-      }
-      if {$g > 1} {
-         set g .5
-         puts stderr "$::progname: coef #$idx must < 1 coef was:$g1, is:$g"
-      }
-      set ::WHB04B_CONFIG(coef,$idx) $g
-      incr idx
-    }
-  }
-  # defaults if not in inifile:
-  set ::WHB04B_CONFIG(scale,0) 1.0
-  set ::WHB04B_CONFIG(scale,1) 1.0
-  set ::WHB04B_CONFIG(scale,2) 1.0
-  set ::WHB04B_CONFIG(scale,3) 1.0
-  set ::WHB04B_CONFIG(scale,4) 1.0
-  set ::WHB04B_CONFIG(scale,5) 1.0
-  if [info exists ::WHB04B_CONFIG(scales)] {
-    set idx 0
-    foreach g $::WHB04B_CONFIG(scales) {
-      set ::WHB04B_CONFIG(scale,$idx) $g
-      incr idx
-    }
-  }
+    # to support fractional scales:
+    #   divide the xhc-hb04.jog.scale by $kvalue
+    #   and
+    #   multiply the pendant_util.scale$idx by $kvalue
+    # to manipulate the integer (s32) joint.N.jog-counts @axN@.jog-counts
 
-  # to support fractional scales:
-  #   divide the xhc-hb04.jog.scale by $kvalue
-  #   and
-  #   multiply the pendant_util.scale$idx by $kvalue
-  # to manipulate the integer (s32) axis.N.jog-counts
-
-  set kvalue 100.0; # allow fractional scales (.1, .01)
+	set kvalue 100.0; # allow fractional scales (.1, .01)
                     # Note: larger values not advised as the
                     #        jog-counts are type s32 (~ +/-2e9)
-  setp pendant_util.k $kvalue
+	setp pendant_util.k $kvalue
 
-  net pendant:jog-prescale    <= whb04b.jog.scale
-  net pendant:jog-prescale    => pendant_util.divide-by-k-in
+	net pendant:jog-prescale    <= whb04b.jog.scale
+	net pendant:jog-prescale    => pendant_util.divide-by-k-in
 
-  net pendant:jog-scale       <= pendant_util.divide-by-k-out
+	net pendant:jog-scale       <= pendant_util.divide-by-k-out
   #   pendant:jog-scale connects to each axis.$axno.jog-scale
 
-  net pendant:wheel-counts     <= whb04b.jog.counts
-  net pendant:wheel-counts-neg <= whb04b.jog.counts-neg
+	net pendant:wheel-counts     <= whb04b.jog.counts
+	net pendant:wheel-counts-neg <= whb04b.jog.counts-neg
 
-  net pendant:is-manual <= halui.mode.is-manual
-  net pendant:is-manual => pendant_util.is-manual
+	net pendant:is-manual <= halui.mode.is-manual
+	net pendant:is-manual => pendant_util.is-manual
 
-  net pendant:jogenable-off <= whb04b.jog.enable-off
-  net pendant:jogenable-off => pendant_util.jogenable-off
+	net pendant:jogenable-off <= whb04b.jog.enable-off
+	net pendant:jogenable-off => pendant_util.jogenable-off
 
-  set anames        {x y z a b c}
-  set available_idx {0 1 2 3 4 5}
+	set anames        {x y z a b c}
+	set available_idx {0 1 2 3 4 5}
   # The pendant has fixed labels and displays for letters: x y z a
   # and xhc-hb04.cc hardcodes pin names for these letters: x y z a
   # Herein: Use label corresponding to coord if possible.
@@ -221,136 +220,139 @@ proc wheel_setup {jogmode} {
   # With this method, any coord (xyzabcuvw) can be controlled by
   # the wheel (providing it exists)
   #
-  set unassigned_coords {}
+	set unassigned_coords {}
 
-  foreach coord $::WHB04B_CONFIG(coords) {
-    set i [lsearch $anames $coord]
-    if {$i >= 0} {
-      set i [lsearch $available_idx $i]
-      # use idx corresponding to coord
-      set use_idx($coord) [lindex $available_idx $i]
-      set available_idx   [lreplace $available_idx $i $i]
-    } else {
-      lappend unassigned_coords $coord
-    }
-  }
-  foreach coord $unassigned_coords {
-    # use next available_idx
-    set use_idx($coord) [lindex $available_idx 0]
-    set available_idx   [lreplace $available_idx 0 0]
-  }
+	foreach coord $::WHB04B_CONFIG(coords) {
+		set i [lsearch $anames $coord]
+		if {$i >= 0} {
+			set i [lsearch $available_idx $i]
+			# use idx corresponding to coord
+			set use_idx($coord) [lindex $available_idx $i]
+			set available_idx   [lreplace $available_idx $i $i]
+		} else {
+			lappend unassigned_coords $coord
+		}
+	}
+	foreach coord $unassigned_coords {
+		# use next available_idx
+		set use_idx($coord) [lindex $available_idx 0]
+		set available_idx   [lreplace $available_idx 0 0]
+	}
 
-  set mapmsg ""
-  foreach coord $::WHB04B_CONFIG(coords) {
-    set axno $::WHB04B_CONFIG($coord,axno)
-    set use_lbl($coord) [lindex $anames $use_idx($coord)]
-    set idx $use_idx($coord)
-    if {"$use_lbl($coord)" != "$coord"} {
-      set mapmsg "$mapmsg\
-      coord: $coord is mapped to pendant switch/display:\
-      $use_lbl($coord) index: $idx\n"
-    }
-    setp pendant_util.coef$idx  $::WHB04B_CONFIG(coef,$idx)
-    setp pendant_util.scale$idx [expr $kvalue * $::WHB04B_CONFIG(scale,$idx)]
+	set mapmsg ""
+	foreach coord $::WHB04B_CONFIG(coords) {
+		set axno $::WHB04B_CONFIG($coord,axno)
+		set use_lbl($coord) [lindex $anames $use_idx($coord)]
+		set idx $use_idx($coord)
+		if {"$use_lbl($coord)" != "$coord"} {
+			set mapmsg "$mapmsg\
+			coord: $coord is mapped to pendant switch/display:\
+			$use_lbl($coord) index: $idx\n"
+		}
+		setp pendant_util.coef$idx  $::WHB04B_CONFIG(coef,$idx)
+		setp pendant_util.scale$idx [expr $kvalue * $::WHB04B_CONFIG(scale,$idx)]
 
-    set acoord [lindex $anames $idx]
-    net pendant:pos-$coord <= halui.axis.$axno.pos-feedback \
-                           => whb04b.$acoord.pos-absolute
-    net pendant:pos-rel-$coord <= halui.axis.$axno.pos-relative \
-                               => whb04b.$acoord.pos-relative
+		set acoord [lindex $anames $idx]
+#		net pendant:pos-$coord <= halui.axis.$axno.pos-feedback \
+		net pendant:pos-$coord <= halui.axis.$acoord.pos-feedback \
+			=> whb04b.$acoord.pos-absolute
+#		net pendant:pos-rel-$coord <= halui.axis.$axno.pos-relative \
+		net pendant:pos-rel-$coord <= halui.axis.$acoord.pos-relative \
+			=> whb04b.$acoord.pos-relative
 
-    if ![pin_exists axis.$axno.jog-scale] {
-      err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
-      missing axis.$axno.* pins"
-    }
-    net pendant:jog-scale => axis.$axno.jog-scale
+		if ![pin_exists axis.$acoord.jog-scale] {
+			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
+			missing axis.$acoord.* pins"
+		}
+		net pendant:jog-scale => axis.$acoord.jog-scale
 
-    net pendant:wheel-counts                 => pendant_util.in$idx
-    net pendant:wheel-counts-$coord-filtered <= pendant_util.out$idx \
-                                             => axis.$axno.jog-counts
+		net pendant:wheel-counts                 => pendant_util.in$idx
+		net pendant:wheel-counts-$coord-filtered <= pendant_util.out$idx \
+			=> axis.$acoord.jog-counts
 
     #-----------------------------------------------------------------------
     # multiplexer for ini.N.max_acceleration
-    if [catch {set std_accel [set ::AXIS_[set axno](MAX_ACCELERATION)]} msg] {
-      err_exit "Error: missing \[AXIS_[set axno]\]MAX_ACCELERATION"
-    }
-    setp pendant_util.amux$idx-in0 $std_accel
-    if ![info exists ::WHB04B_CONFIG(accel,$idx)] {
-      set ::WHB04B_CONFIG(accel,$idx) $std_accel ;# if not specified
-    }
-    setp pendant_util.amux$idx-in1 $::WHB04B_CONFIG(accel,$idx)
+		if [catch {set std_accel [set ::AXIS_[set axno](MAX_ACCELERATION)]} msg] {
+			err_exit "Error: missing \[AXIS_[set axno]\]MAX_ACCELERATION"
+		}
+		setp pendant_util.amux$idx-in0 $std_accel
+		if ![info exists ::WHB04B_CONFIG(accel,$idx)] {
+			set ::WHB04B_CONFIG(accel,$idx) $std_accel ;# if not specified
+		}
+		setp pendant_util.amux$idx-in1 $::WHB04B_CONFIG(accel,$idx)
 
     # This signal is named using $axno so the connection can be made
     # later when the ini pins have been created
-    net pendant:muxed-accel-$axno <= pendant_util.amux$idx-out
+		net pendant:muxed-accel-$axno <= pendant_util.amux$idx-out
     # a script running after task is started must connect:
     # net pendant:muxed-accel-$axno => ini.$axno.max_acceleration
 
     #-----------------------------------------------------------------------
-    switch $jogmode {
-      normal - vnormal {
-        net pendant:jog-$coord <= whb04b.jog.enable-$acoord \
-                               => axis.$axno.jog-enable
-      }
-      plus-minus {
+		switch $jogmode {
+			normal - vnormal {
+				net pendant:jog-$coord <= whb04b.jog.enable-$acoord \
+					=> axis.$acoord.jog-enable
+			}
+			plus-minus {
         # (Experimental) connect halui plus,minus pins
-        net pendant:jog-plus-$coord  <= whb04b.jog.plus-$acoord  \
-                                     => halui.jog.$axno.plus
-        net pendant:jog-minus-$coord <= whb04b.jog.minus-$acoord \
-                                     => halui.jog.$axno.minus
-      }
-    }
-    switch $jogmode {
-      vnormal {
-        setp axis.$axno.jog-vel-mode 1
-      }
-    }
-  }
-  if {"$mapmsg" != ""} {
-    puts "\n$::progname:\n$mapmsg"
-  }
+				net pendant:jog-plus-$coord  <= whb04b.jog.plus-$acoord  \
+					=> halui.jog.$axno.plus
+				net pendant:jog-minus-$coord <= whb04b.jog.minus-$acoord \
+				=> halui.jog.$axno.minus
+			}
+		}
+		switch $jogmode {
+			vnormal {
+				setp axis.$axno.jog-vel-mode 1
+			}
+		}
+	}
+	if {"$mapmsg" != ""} {
+		puts "\n$::progname:\n$mapmsg"
+	}
 
-  switch $jogmode {
-    normal - vnormal {
-      net pendant:jog-speed <= halui.max-velocity.value
-      # not used: xhc-hb04.jog.velocity
-      # not used: xhc-hb04.jog.max-velocity
-    }
-    plus-minus {
-      # (Experimental)
-      # Note: the xhc-hb04 driver manages xhc-hb04.jog.velocity
-      net pendant:jog-max-velocity <= halui.max-velocity.value
-      net pendant:jog-max-velocity => whb04b.jog.max-velocity
-      net pendant:jog-speed        <= whb04b.jog.velocity
-      net pendant:jog-speed        => halui.jog-speed
-    }
-  }
+	switch $jogmode {
+		normal - vnormal {
+			net pendant:jog-speed <= halui.max-velocity.value
+			# not used: xhc-hb04.jog.velocity
+			# not used: xhc-hb04.jog.max-velocity
+		}
+		plus-minus {
+			# (Experimental)
+			# Note: the xhc-hb04 driver manages xhc-hb04.jog.velocity
+			net pendant:jog-max-velocity <= halui.max-velocity.value
+			net pendant:jog-max-velocity => whb04b.jog.max-velocity
+			net pendant:jog-speed <= whb04b.jog.velocity
+			net pendant:jog-speed => halui.axis.jog-speed
+		}
+	}
 
-  setp halui.feed-override.scale 0.01
-  net pendant:wheel-counts  => halui.feed-override.counts
+	setp halui.feed-override.scale 0.01
+	net pendant:wheel-counts  => halui.feed-override.counts
 
-  setp halui.spindle-override.scale 0.01
-  net pendant:wheel-counts  => halui.spindle-override.counts
+	setp halui.spindle-override.scale 0.01
+	net pendant:wheel-counts  => halui.spindle-override.counts
 
-  net pendant:feed-override-enable => halui.feed-override.count-enable \
-                                   <= whb04b.jog.enable-feed-override
+	net pendant:feed-override-enable => halui.feed-override.count-enable \
+			<= whb04b.jog.enable-feed-override
 
-  net pendant:feed-override <= halui.feed-override.value \
-                            => whb04b.feed-override
+	net pendant:feed-override <= halui.feed-override.value \
+			=> whb04b.feed-override
 
-  net pendant:feed-value <= motion.current-vel \
-                         => whb04b.feed-value
+	net pendant:feed-value <= motion.current-vel \
+			=> whb04b.feed-value
 
-  net pendant:spindle-override-enable => halui.spindle-override.count-enable \
-                                      <= whb04b.jog.enable-spindle-override
+	net pendant:spindle-override-enable => halui.spindle-override.count-enable \
+			<= whb04b.jog.enable-spindle-override
 
-  net pendant:spindle-override <= halui.spindle-override.value \
-                               => whb04b.spindle-override
+	net pendant:spindle-override <= halui.spindle-override.value \
+			=> whb04b.spindle-override
 
-  set sname [existing_outpin_signame \
-                motion.spindle-speed-out-rps-abs pendant:spindle-rps]
-  net $sname <= motion.spindle-speed-out-rps-abs \
-             => whb04b.spindle-rps
+	set sname [existing_outpin_signame \
+			motion.spindle-speed-out-rps-abs pendant:spindle-rps]
+	net $sname <= motion.spindle-speed-out-rps-abs \
+			=> whb04b.spindle-rps
+
 } ;# wheel_setup
 
 proc existing_outpin_signame {pinname newsigname} {
@@ -369,7 +371,7 @@ proc existing_outpin_signame {pinname newsigname} {
 
 proc std_start_pause_button {} {
   # hardcoded setup for button-start-pause
-  net    pendant:start-or-pause <= whb04b.button-start-pause \
+  net    pendant:start-or-pause <= whb04b.start-pause \
                                 => pendant_util.start-or-pause
 
   net    pendant:is-idle    <= halui.program.is-idle \
@@ -379,13 +381,13 @@ proc std_start_pause_button {} {
   net    pendant:is-running <= halui.program.is-running \
                             => pendant_util.is-running
 
-  net    pendant:program-resume <= pendant_util.resume \
-                                => halui.program.resume
-  net    pendant:program-pause  <= pendant_util.pause \
-                                => halui.program.pause
-  net    pendant:program-run    <= pendant_util.run  \
-                                => halui.program.run \
-                                => halui.mode.auto
+#  net    pendant:program-resume <= pendant_util.resume \
+#                                => halui.program.resume
+#  net    pendant:program-pause  <= pendant_util.pause \
+#                                => halui.program.pause
+#  net    pendant:program-run    <= pendant_util.run  \
+#                                => halui.program.run \
+#                                => halui.mode.auto
 } ;# std_start_pause_button
 
 proc popup_msg {msg} {
@@ -496,15 +498,15 @@ switch -glob $::WHB04B_CONFIG(inch_or_mm) {
 
 # jogmodes:
 #   normal,vnormal: use motion pins:
-#               axis.N.jog-counts
-#               axis.N.jog-enable
-#               axis.N.jog-scale  (machine units per count)
-#               axis.N.jog-vel-mode
+#               joint.N.jog-counts @axN@.jog-counts
+#               @axN@.jog-enable
+#               joint.N.jog-scale @axN@.jog-scale  (machine units per count)
+#               joint.N.jog-vel-mode @axN@.jog-vel-mode
 
 #   plus-minus: use halui pins:   (Experimental)
-#               halui.jog.N.plus  (jog in + dir at jog-speed)
-#               halui.jog.N.minus (jog in - dir at jog-speed)
-#               halui.jog-speed   (applies to plus-minus jogging only)
+#               halui.@axN@.plus  (jog in + dir at jog-speed)
+#               halui.@axN@.minus (jog in - dir at jog-speed)
+#               halui.axis.jog-speed   (applies to plus-minus jogging only)
 #
 if ![info exists ::WHB04B_CONFIG(jogmode)] {
   set ::WHB04B_CONFIG(jogmode) normal ;# default
