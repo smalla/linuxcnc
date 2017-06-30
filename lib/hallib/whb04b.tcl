@@ -260,10 +260,10 @@ proc wheel_setup {jogmode} {
 		net pendant:pos-rel-$coord <= halui.axis.$acoord.pos-relative \
 			=> whb04b.$acoord.pos-relative
 
-		if ![pin_exists axis.$acoord.jog-scale] {
-			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
-			missing axis.$acoord.* pins"
-		}
+#		if ![pin_exists axis.$acoord.jog-scale] {
+#			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
+#			missing axis.$acoord.* pins"
+#		}
 		net pendant:jog-scale => axis.$acoord.jog-scale
 
 		net pendant:wheel-counts                 => pendant_util.in$idx
@@ -272,8 +272,8 @@ proc wheel_setup {jogmode} {
 
     #-----------------------------------------------------------------------
     # multiplexer for ini.N.max_acceleration
-		if [catch {set std_accel [set ::AXIS_[set axno](MAX_ACCELERATION)]} msg] {
-			err_exit "Error: missing \[AXIS_[set axno]\]MAX_ACCELERATION"
+		if [catch {set std_accel [set ::AXIS_[set acoord](MAX_ACCELERATION)]} msg] {
+			err_exit "Error: missing \[AXIS_[set acoord]\]MAX_ACCELERATION"
 		}
 		setp pendant_util.amux$idx-in0 $std_accel
 		if ![info exists ::WHB04B_CONFIG(accel,$idx)] {
@@ -439,8 +439,8 @@ foreach name [array names ::WHB04B_CONFIG] {
 
 if [info exists ::WHB04B_CONFIG(layout)] {
   switch ${::WHB04B_CONFIG(layout)} {
-    1 {set cfg ${libtag}whb04b-layout1.cfg}
-    2 {set cfg ${libtag}whb04b-layout2.cfg} # should be WHBO4B-4
+    1 {set cfg ${libtag}whb04b-layout1.cfg} # should be WHB04B-4
+    2 {set cfg ${libtag}whb04b-layout2.cfg} # should be WHBO4B-6
     default {
       set msg "Nonstandard layout:<$::WHB04B_CONFIG(layout)>"
       set cfg $::WHB04B_CONFIG(layout)
