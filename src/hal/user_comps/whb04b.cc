@@ -243,18 +243,18 @@ int xhc_encode_s16(int v, unsigned char *buf)
 
 void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 {
-	unsigned char buf[6*7];
+	unsigned char buf[7*7];
 	unsigned char *p = buf;
 	int i;
 	int packet;
 
-	assert(len == 6*8);
+	assert(len == 7*8);
 
 	memset(buf, 0, sizeof(buf));
 
 	*p++ = 0xFE;
 	*p++ = 0xFD;
-	*p++ = 0x0C;
+	*p++ = 0x06;
 
 	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
 	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
@@ -290,10 +290,10 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
         buf[FLAGS_BYTE] |= 0x80;
     }
 
-	// Multiplex to 6 USB transactions
+	// Multiplex to 7 USB transactions
 
 	p = buf;
-	for (packet=0; packet<6; packet++) {
+	for (packet=0; packet<7; packet++) {
 		for (i=0; i<8; i++) {
 			if (i == 0) data[i+8*packet] = 6;
 			else data[i+8*packet] = *p++;
@@ -303,12 +303,12 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 
 void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
 {
-	unsigned char data[6*8];
+	unsigned char data[7*8];
 	int packet;
 
 	xhc_display_encode(xhc, data, sizeof(data));
 
-	for (packet=0; packet<6; packet++) {
+	for (packet=0; packet<7; packet++) {
 		int r = libusb_control_transfer(dev_handle,
 		              LIBUSB_DT_HID, //bmRequestType 0x21
 		              LIBUSB_REQUEST_SET_CONFIGURATION, //bRequest 0x09
@@ -360,14 +360,13 @@ void generate_combined_button_codes ()
 //					printf("k:%d, i:%d, FN+ %d\n", k,i, xhc.buttons[k].fn);
 					cantored_codes[noofk] = k;
 					noofk++;
-//					char *tempname = (char*)malloc(strlen(xhc.buttons[j].pin_name)+4);
-//					strcpy(tempname, xhc.buttons[j].pin_name);
-//					strcpy(tempname+strlen(xhc.buttons[j].pin_name),"-fn");
 //					strncpy(xhc.buttons[k].pin_name, tempname,20);
 					strncpy(xhc.buttons[k].pin_name, xhc.buttons[j].pin_name, 20);
 				}
+//			printf("k:%d, j:%d, %s\n", k,j, xhc.buttons[k].pin_name);
 			}
 		}
+//	printf("k:%d, i:%d, p:%s\n", k,i, xhc.buttons[k].pin_name);
 	}
 }
 
@@ -577,21 +576,8 @@ void cb_response_in(struct libusb_transfer *transfer)
 		*(xhc.hal->jog_enable_spindle) = (xhc.axis == axis_spindle);
 
 		for ( int k : cantored_codes) {
-		    i=k;
-//			printf("1xhc.button_code: %d buttons i: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
-			if (!xhc.hal->button_pin[i]) continue;
-/*			if ( (xhc.buttons[i].fn) == 1 ) {
-				// if a function button hit do
-				xhc.buttons[i].calculated_code = cantor(13, xhc.buttons[i].code);
-				printf("2xhc.button_code: %d buttons calc-code: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
-			}else 
-			{
-				xhc.buttons[i].calculated_code = cantor(xhc.buttons[i].code,0);
-				printf("3xhc.button_code: %d buttons calc-code: %d \n", xhc.button_code,xhc.buttons[i].calculated_code);
-			}
-*/
-			*(xhc.hal->button_pin[i]) = (xhc.button_code == xhc.buttons[i].calculated_code);
-			if (strcmp("worigin-probez", xhc.buttons[i].pin_name) == 0) {
+			i=k;
+			if (strncmp("worigin-probez", xhc.buttons[i].pin_name, 10) == 0) {
 				*(xhc.hal->zero_x) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_x);
 				*(xhc.hal->zero_y) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_y);
 				*(xhc.hal->zero_z) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_z);
@@ -614,15 +600,14 @@ void cb_response_in(struct libusb_transfer *transfer)
 				*(xhc.hal->half_a) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_a);
 				*(xhc.hal->half_b) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_b);
 				*(xhc.hal->half_c) = (xhc.button_code == xhc.buttons[i].calculated_code) && (xhc.axis == axis_c);
-
 			}
+			if (!xhc.hal->button_pin[i]) continue;
+			*(xhc.hal->button_pin[i]) = (xhc.button_code == xhc.buttons[i].calculated_code);
+
 
 			if (simu_mode && *(xhc.hal->button_pin[i])) {
 				printf("%s pressed, code: %d ", xhc.buttons[i].pin_name,xhc.buttons[i].calculated_code);
-//				printf("Axis: %x, Rate: %x \n", xhc.axis,xhc.rate);
-			//	printf("button_pin: %d ", xhc.hal->button_pin[i]);
 			}
-//}
 		}
 		if (simu_mode) {
 			if ((signed char)in_buf[6] != 0) printf("MPG delta %+3d",(signed char)in_buf[6]);
@@ -773,7 +758,7 @@ static void hal_setup()
 
         if (!xhc.buttons[i].pin_name[0]) continue;
 
-        if (strcmp("worigin-probez", xhc.buttons[i].pin_name) == 0) {
+        if (strncmp(xhc.buttons[i].pin_name,"worigin-probez",7) == 0 && xhc.buttons[i].fn == 0) {
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->zero_x), hal_comp_id, "%s.%s-x", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->zero_y), hal_comp_id, "%s.%s-y", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->zero_z), hal_comp_id, "%s.%s-z", modname, xhc.buttons[i].pin_name);
@@ -782,7 +767,7 @@ static void hal_setup()
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->zero_c), hal_comp_id, "%s.%s-c", modname, xhc.buttons[i].pin_name);
 		continue;
         }
-        if (strcmp("morigin-out7", xhc.buttons[i].pin_name) == 0) {
+        if (strcmp("morigin-out7", xhc.buttons[i].pin_name) == 0 && xhc.buttons[i].fn == 0 ) {
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->gotozero_x), hal_comp_id, "%s.%s-x", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->gotozero_y), hal_comp_id, "%s.%s-y", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->gotozero_z), hal_comp_id, "%s.%s-z", modname, xhc.buttons[i].pin_name);
@@ -791,7 +776,7 @@ static void hal_setup()
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->gotozero_c), hal_comp_id, "%s.%s-c", modname, xhc.buttons[i].pin_name);
 		continue;
         }
-        if (strcmp("half-safez", xhc.buttons[i].pin_name) == 0) {
+        if (strcmp("half-safez", xhc.buttons[i].pin_name) == 0 && xhc.buttons[i].fn == 0) {
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->half_x), hal_comp_id, "%s.%s-x", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->half_y), hal_comp_id, "%s.%s-y", modname, xhc.buttons[i].pin_name);
 		r |= _hal_pin_bit_newf(HAL_OUT, &(xhc.hal->half_z), hal_comp_id, "%s.%s-z", modname, xhc.buttons[i].pin_name);
