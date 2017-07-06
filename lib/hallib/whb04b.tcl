@@ -208,7 +208,7 @@ proc wheel_setup {jogmode} {
 	net pendant:jogenable-off <= whb04b.jog.enable-off
 	net pendant:jogenable-off => pendant_util.jogenable-off
 
-	set anames        {x y z a b c}
+	set anames        {X Y Z A B C}
 	set available_idx {0 1 2 3 4 5}
   # The pendant has fixed labels and displays for letters: x y z a
   # and xhc-hb04.cc hardcodes pin names for these letters: x y z a
@@ -260,15 +260,15 @@ proc wheel_setup {jogmode} {
 		net pendant:pos-rel-$coord <= halui.axis.$acoord.pos-relative \
 			=> whb04b.$acoord.pos-relative
 
-#		if ![pin_exists axis.$acoord.jog-scale] {
-#			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
-#			missing axis.$acoord.* pins"
-#		}
-		net pendant:jog-scale => axis.$acoord.jog-scale
+		if ![pin_exists joint.$axno.jog-scale] {
+			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\
+			missing joint.$axno.* pins"
+		}
+		net pendant:jog-scale => joint.$axno.jog-scale
 
 		net pendant:wheel-counts                 => pendant_util.in$idx
 		net pendant:wheel-counts-$coord-filtered <= pendant_util.out$idx \
-			=> axis.$acoord.jog-counts
+			=> joint.$axno.jog-counts
 
     #-----------------------------------------------------------------------
     # multiplexer for ini.N.max_acceleration
@@ -290,14 +290,14 @@ proc wheel_setup {jogmode} {
     #-----------------------------------------------------------------------
 		switch $jogmode {
 			normal - vnormal {
-				net pendant:jog-$coord <= whb04b.jog.enable-$acoord \
-					=> axis.$acoord.jog-enable
+				net pendant:jog-$coord <= whb04b.jog.enable-[string tolower $acoord] \
+					=> joint.$axno.jog-enable
 			}
 			plus-minus {
         # (Experimental) connect halui plus,minus pins
-				net pendant:jog-plus-$coord  <= whb04b.jog.plus-$acoord  \
+				net pendant:jog-plus-$coord  <= whb04b.jog.plus-[string tolower $acoord]  \
 					=> halui.jog.$axno.plus
-				net pendant:jog-minus-$coord <= whb04b.jog.minus-$acoord \
+				net pendant:jog-minus-$coord <= whb04b.jog.minus-[string tolower $acoord] \
 				=> halui.jog.$axno.minus
 			}
 		}
