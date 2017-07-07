@@ -253,12 +253,10 @@ proc wheel_setup {jogmode} {
 		setp pendant_util.scale$idx [expr $kvalue * $::WHB04B_CONFIG(scale,$idx)]
 
 		set acoord [lindex $anames $idx]
-#		net pendant:pos-$coord <= halui.axis.$axno.pos-feedback \
-		net pendant:pos-$coord <= halui.axis.$acoord.pos-feedback \
-			=> whb04b.$acoord.pos-absolute
-#		net pendant:pos-rel-$coord <= halui.axis.$axno.pos-relative \
-		net pendant:pos-rel-$coord <= halui.axis.$acoord.pos-relative \
-			=> whb04b.$acoord.pos-relative
+		net pendant:pos-$coord <= halui.axis.[string tolower $acoord].pos-feedback \
+			=> whb04b.[string tolower $acoord].pos-absolute
+		net pendant:pos-rel-$coord <= halui.axis.[string tolower $acoord].pos-relative \
+			=> whb04b.[string tolower $acoord].pos-relative
 
 		if ![pin_exists joint.$axno.jog-scale] {
 			err_exit "Not configured for coords = $::WHB04B_CONFIG(coords),\

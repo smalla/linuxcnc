@@ -1049,7 +1049,7 @@ int main (int argc,char **argv)
 			libusb_close(dev_handle);
 		}
 		else {
-			while (!do_exit) usleep(70000);
+			while (!do_exit) usleep(700000);
 		}
 		libusb_exit(ctx);
 	}
