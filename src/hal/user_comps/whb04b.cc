@@ -254,7 +254,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 
 	*p++ = 0xFE;
 	*p++ = 0xFD;
-	*p++ = 0x06;
+	*p++ = 0x07;
 
 	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
 	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
@@ -299,6 +299,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 			else data[i+8*packet] = *p++;
 		}
 	}
+//printf("%0X\n", *p);
 }
 
 void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
@@ -1049,7 +1050,7 @@ int main (int argc,char **argv)
 			libusb_close(dev_handle);
 		}
 		else {
-			while (!do_exit) usleep(700000);
+			while (!do_exit) usleep(70000);
 		}
 		libusb_exit(ctx);
 	}
