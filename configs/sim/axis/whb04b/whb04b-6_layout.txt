@@ -1,0 +1,35 @@
+whb04b-6-layout
+
+13 buttons:
+
+---------------------------------------
+|RESET   |Stop/rewind|Start/Pause     |
+---------------------------------------
+|Feed+/OUT3|Feed-/Out4|Spindle+/Out5|Spindle-/Out6 |
+---------------------------------------
+|M-Origin/Out7 |%2(=0)/Safe-Z |W-Origin/Probe-Z|Spindle On/Off| Fn
+---------------------------------------
+|-|-|Switch Coordinate|-|-|
+---------------------------------------
+|Axis Select     | Feed Rate
+Off			1X
+X			10X
+Y			100X
+Z			MPG
+A			Lead
+B
+C
+
+Button codes defined in LIB:whb04b-6-layout.cfg
+
+The Start/Pause button can be connected for standard behavior with:
+  [XHC_HB04_BUTTON]start-pause = std_start_pause
+
+The STEP button is normally connected with:
+  [XHC_HB04_BUTTON]step = whb04b.stepsize-up
+
+The other buttons can be connected to hal pins -- typically halui provided pins.
+
+MDI commands can be executed using halui.mdi-command-nn pins defined in the ini file with entries like: [HALUI]MDI_COMMAND = mdi_command 
+
+
