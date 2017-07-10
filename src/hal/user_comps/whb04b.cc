@@ -187,7 +187,6 @@ typedef struct {
 //	xhc_button_t buttons[NB_MAX_BUTTONS];
 	xhc_button_t buttons[CALCULATED_MAX_BUTTONS];
 	unsigned char button_code;
-//	unsigned char button2_code;
 	bool fnpressed;
 	char old_inc_step_status;
 	unsigned char button_step;	// Used in simulation mode to handle the STEP increment
@@ -247,7 +246,12 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	unsigned char *p = buf;
 	int i;
 	int packet;
-
+/*
+for(size_t i = 0; i < sizeof(data)/sizeof(unsigned char); i++){
+	printf("%d ",data[i]);
+}
+printf("\n");
+*/
 	assert(len == 7*8);
 
 	memset(buf, 0, sizeof(buf));
@@ -256,7 +260,41 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	*p++ = 0xFD;
 	*p++ = 0x07;
 
-	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
+	if (xhc->rate == rate_1x){ for (i=0;i<9;i++){ *p++ = 32;} *p++ = 49; *p++ = 88;} // 1X
+	if (xhc->rate == rate_10x){ for (i=0;i<8;i++){ *p++ = 32;} *p++ = 49; *p++ =48; *p++ = 88;} //10X
+	if (xhc->rate == rate_100x){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 49; *p++ =48; *p++ =48; *p++ = 88;} //100X
+	if (xhc->rate == rate_mpg){ for (i=0;i<8;i++){ *p++ = 32;} *p++ = 77; *p++ = 80; *p++ = 71;} //MPG
+	if (xhc->rate == rate_lead){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 76; *p++ = 69; *p++ = 65; *p++ = 68;} //LEAD
+
+	if (xhc->axis == axis_off){ 
+		*p++ = 77; *p++ = 80; *p++ = 71; *p++ = 32; *p++ = 79; *p++ = 70; *p++ = 70;
+	} // MPG OFF
+	if (xhc->axis == axis_x){ 
+		*p++ = 88;*p++ = 58;  //X:
+		p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
+	}
+	if (xhc->axis == axis_y){ 
+		*p++ = 89;*p++ = 58;
+		p += xhc_encode_float(round(1000 * *(xhc->hal->y_wc)) / 1000, p);
+	}
+	if (xhc->axis == axis_z){ 
+		*p++ = 90;*p++ = 58;
+		p += xhc_encode_float(round(1000 * *(xhc->hal->z_wc)) / 1000, p);
+	}
+	if (xhc->axis == axis_a){ 
+		*p++ = 65;*p++ = 58;
+		p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
+	}
+	if (xhc->axis == axis_b){ 
+		*p++ = 66;*p++ = 58;
+		p += xhc_encode_float(round(1000 * *(xhc->hal->b_wc)) / 1000, p);
+	}
+	if (xhc->axis == axis_c){ 
+		*p++ = 67;*p++ = 58;
+		p += xhc_encode_float(round(1000 * *(xhc->hal->c_wc)) / 1000, p);
+	}
+
+/*	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
 	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
 	p += xhc_encode_float(round(1000 * *(xhc->hal->y_wc)) / 1000, p);
 	p += xhc_encode_float(round(1000 * *(xhc->hal->z_wc)) / 1000, p);
@@ -268,8 +306,8 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	p += xhc_encode_s16(round(100.0 * *(xhc->hal->spindle_override)), p);
 	p += xhc_encode_s16(round(60.0 * *(xhc->hal->feedrate)), p);
 	p += xhc_encode_s16(round(60.0 * *(xhc->hal->spindle_rps)), p);
-
-	switch (*(xhc->hal->stepsize)) {
+*/
+/*	switch (*(xhc->hal->stepsize)) {
 	case    0: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
 	case    1: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1; break;
 	case    5: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_5; break;
@@ -284,7 +322,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	default:   //stepsize not supported on the display:
 			   buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
 	}
-
+*/
     buf[FLAGS_BYTE] = 0;
     if (*(xhc->hal->inch_icon)) {
         buf[FLAGS_BYTE] |= 0x80;
@@ -295,10 +333,15 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	p = buf;
 	for (packet=0; packet<7; packet++) {
 		for (i=0; i<8; i++) {
+			
 			if (i == 0) data[i+8*packet] = 6;
 			else data[i+8*packet] = *p++;
+			if (*p == 0) *p = 32;
+			printf("%02X ", *p);
 		}
+	printf("\n");
 	}
+printf("\n");
 //printf("%0X\n", *p);
 }
 
