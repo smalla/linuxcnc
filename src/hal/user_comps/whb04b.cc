@@ -240,10 +240,29 @@ int xhc_encode_s16(int v, unsigned char *buf)
 	return 2;
 }
 
+std::string convert_to_hex(const std::string& toencode)
+{
+    static const char* const lut = "0123456789ABCDEF";
+    size_t len = toencode.length();
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = toencode[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
+}
+
 void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 {
 	unsigned char buf[7*7];
 	unsigned char *p = buf;
+	std::string message = "";
+	std::string hexmessage;
+	std::ostringstream position;
 	int i;
 	int packet;
 /*
@@ -265,36 +284,64 @@ printf("\n");
 	if (xhc->rate == rate_100x){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 49; *p++ =48; *p++ =48; *p++ = 88;} //100X
 	if (xhc->rate == rate_mpg){ for (i=0;i<8;i++){ *p++ = 32;} *p++ = 77; *p++ = 80; *p++ = 71;} //MPG
 	if (xhc->rate == rate_lead){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 76; *p++ = 69; *p++ = 65; *p++ = 68;} //LEAD
-
 	if (xhc->axis == axis_off){ 
-		*p++ = 77; *p++ = 80; *p++ = 71; *p++ = 32; *p++ = 79; *p++ = 70; *p++ = 70;
+		message = "MPG OFF";
+//		hexmessage = convert_to_hex(message);
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	} // MPG OFF
 	if (xhc->axis == axis_x){ 
-		*p++ = 88;*p++ = 58;  //X:
-		p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
+		message = "X:"; //X:
+		position << *(xhc->hal->x_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	}
 	if (xhc->axis == axis_y){ 
-		*p++ = 89;*p++ = 58;
-		p += xhc_encode_float(round(1000 * *(xhc->hal->y_wc)) / 1000, p);
+		message = "Y:"; //Y:
+		position << *(xhc->hal->y_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
+
 	}
 	if (xhc->axis == axis_z){ 
-		*p++ = 90;*p++ = 58;
-		p += xhc_encode_float(round(1000 * *(xhc->hal->z_wc)) / 1000, p);
+		message = "Z:"; //Z:
+		position << *(xhc->hal->z_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	}
 	if (xhc->axis == axis_a){ 
-		*p++ = 65;*p++ = 58;
-		p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
+		message = "A:"; //A:
+		position << *(xhc->hal->a_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	}
 	if (xhc->axis == axis_b){ 
-		*p++ = 66;*p++ = 58;
-		p += xhc_encode_float(round(1000 * *(xhc->hal->b_wc)) / 1000, p);
+		message = "B:"; //B:
+		position << *(xhc->hal->b_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	}
 	if (xhc->axis == axis_c){ 
-		*p++ = 67;*p++ = 58;
-		p += xhc_encode_float(round(1000 * *(xhc->hal->c_wc)) / 1000, p);
+		message = "C:"; //C:
+		position << *(xhc->hal->c_wc);
+		message += (std::string) position.str();
+		for (char& c : message) {
+			*p++ = c ;
+		}
 	}
-
-/*	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
+/*
+	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
 	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
 	p += xhc_encode_float(round(1000 * *(xhc->hal->y_wc)) / 1000, p);
 	p += xhc_encode_float(round(1000 * *(xhc->hal->z_wc)) / 1000, p);
@@ -337,11 +384,11 @@ printf("\n");
 			if (i == 0) data[i+8*packet] = 6;
 			else data[i+8*packet] = *p++;
 			if (*p == 0) *p = 32;
-			printf("%02X ", *p);
+//			printf("%02X ", *p);
 		}
-	printf("\n");
+//	printf("\n");
 	}
-printf("\n");
+//printf("\n");
 //printf("%0X\n", *p);
 }
 
