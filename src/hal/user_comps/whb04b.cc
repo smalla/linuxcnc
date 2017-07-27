@@ -258,148 +258,126 @@ std::string convert_to_hex(const std::string& toencode)
 
 void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 {
-	unsigned char buf[7*7];
+	unsigned char buf[8*8];
 	unsigned char *p = buf;
 	std::string message = "";
 	std::string hexmessage;
+	std::array<std::string, 8> messages_to_display;
 	std::ostringstream position;
-	int i;
+	unsigned int i;
+	unsigned int display_position;
 	int packet;
-/*
-for(size_t i = 0; i < sizeof(data)/sizeof(unsigned char); i++){
-	printf("%d ",data[i]);
-}
-printf("\n");
+/* 	Rows are: 1st: 11 char, first position is 5th char from the left.
+	2nd: from 12 to 27
+	3rd: from 28 to 43
+	4th: from 44 to 59 but row four does not seem to work.
+	L-R Left-Right Align
 */
-	assert(len == 7*8);
+//	std::string text_positions[] = {"L1", "R11", "L12", "L20", "L28", "L36", "L44", "L52"};
+//					    x   y   z   a   b   c
+	unsigned int text_positions[] = {6, 12, 20, 28, 36, 44, 52, 0};
+
+	assert(len == 8*8);
 
 	memset(buf, 0, sizeof(buf));
 
-	*p++ = 0xFE;
-	*p++ = 0xFD;
-	*p++ = 0x07;
+	*p++ = 0xFE; // Magic
+	*p++ = 0xFD; // Magic
+	*p++ = 0x07; // Cant tell whats this, on mach3 I saw this, but working without or any number
 
-	if (xhc->rate == rate_1x){ for (i=0;i<9;i++){ *p++ = 32;} *p++ = 49; *p++ = 88;} // 1X
-	if (xhc->rate == rate_10x){ for (i=0;i<8;i++){ *p++ = 32;} *p++ = 49; *p++ =48; *p++ = 88;} //10X
-	if (xhc->rate == rate_100x){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 49; *p++ =48; *p++ =48; *p++ = 88;} //100X
-	if (xhc->rate == rate_mpg){ for (i=0;i<8;i++){ *p++ = 32;} *p++ = 77; *p++ = 80; *p++ = 71;} //MPG
-	if (xhc->rate == rate_lead){ for (i=0;i<7;i++){ *p++ = 32;} *p++ = 76; *p++ = 69; *p++ = 65; *p++ = 68;} //LEAD
-	if (xhc->axis == axis_off){ 
-		message = "MPG OFF";
-//		hexmessage = convert_to_hex(message);
-		for (char& c : message) {
-			*p++ = c ;
+	if (xhc->rate == rate_1x)	{ messages_to_display[0] = "1x";}
+	if (xhc->rate == rate_10x)	{ messages_to_display[0] = "10x";}
+	if (xhc->rate == rate_100x)	{ messages_to_display[0] = "100x";}
+	if (xhc->rate == rate_mpg)	{ messages_to_display[0] = "MPG";}
+	if (xhc->rate == rate_lead)	{ messages_to_display[0] = "LEAD";}
+
+	if (xhc->axis == axis_off)	{ messages_to_display[0] = "MPG OFF";} 
+
+	message = "X"; //X:
+	position << *(xhc->hal->x_wc);
+	message += (std::string) position.str();
+	messages_to_display[1] = message;
+	position.str("");
+
+	message = "Y"; //Y:
+	position << *(xhc->hal->y_wc);
+	message += (std::string) position.str();
+	messages_to_display[2] = message;
+	position.str("");
+
+	message = "Z"; //Z:
+	position << *(xhc->hal->z_wc);
+	message += (std::string) position.str();
+	messages_to_display[3] = message;
+	position.str("");
+
+	message = "A"; //A:
+	position << *(xhc->hal->a_wc);
+	message += (std::string) position.str();
+	messages_to_display[4] = message;
+	position.str("");
+
+	message = "B"; //B:
+	position << *(xhc->hal->b_wc);
+	message += (std::string) position.str();
+	messages_to_display[5] = message;
+	position.str("");
+
+	message = "C"; //C:
+	position << *(xhc->hal->c_wc);
+	message += (std::string) position.str();
+	messages_to_display[6] = message;
+	position.str("");
+
+	display_position = 0;
+	for (i = 0; i<messages_to_display.size(); i++){
+		for (char& c : messages_to_display[i]) {*p++ = c;}
+		display_position += messages_to_display[i].size();
+		printf("dp:%d smtd:%d \n",display_position, messages_to_display[i].size());
+		while ( display_position <= text_positions[i]){
+			*p++ = 0;
+			display_position++;
+		printf("dp:%d textpos:%d \n",display_position, text_positions[i]);
 		}
-	} // MPG OFF
-	if (xhc->axis == axis_x){ 
-		message = "X:"; //X:
-		position << *(xhc->hal->x_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
-	}
-	if (xhc->axis == axis_y){ 
-		message = "Y:"; //Y:
-		position << *(xhc->hal->y_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
+	printf("dp:%d 222textpos:%d \n",display_position, text_positions[i]);
+//		*p++ = messages_to_display[i];
+//		while ( display_position < messages_to_display[i].size() + text_positions[i] ){
+//		    *p++ = 0;
+//		}
+//		display_position = text_positions[i];
 
 	}
-	if (xhc->axis == axis_z){ 
-		message = "Z:"; //Z:
-		position << *(xhc->hal->z_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
-	}
-	if (xhc->axis == axis_a){ 
-		message = "A:"; //A:
-		position << *(xhc->hal->a_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
-	}
-	if (xhc->axis == axis_b){ 
-		message = "B:"; //B:
-		position << *(xhc->hal->b_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
-	}
-	if (xhc->axis == axis_c){ 
-		message = "C:"; //C:
-		position << *(xhc->hal->c_wc);
-		message += (std::string) position.str();
-		for (char& c : message) {
-			*p++ = c ;
-		}
-	}
+
 /*
-	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_wc)) / 1000, p);
-	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_wc)) / 1000, p);
-	p += xhc_encode_float(round(1000 * *(xhc->hal->y_wc)) / 1000, p);
-	p += xhc_encode_float(round(1000 * *(xhc->hal->z_wc)) / 1000, p);
-	if (xhc->axis == axis_a) p += xhc_encode_float(round(1000 * *(xhc->hal->a_mc)) / 1000, p);
-	else p += xhc_encode_float(round(1000 * *(xhc->hal->x_mc)) / 1000, p);
-	p += xhc_encode_float(round(1000 * *(xhc->hal->y_mc)) / 1000, p);
-	p += xhc_encode_float(round(1000 * *(xhc->hal->z_mc)) / 1000, p);
-	p += xhc_encode_s16(round(100.0 * *(xhc->hal->feedrate_override)), p);
-	p += xhc_encode_s16(round(100.0 * *(xhc->hal->spindle_override)), p);
-	p += xhc_encode_s16(round(60.0 * *(xhc->hal->feedrate)), p);
-	p += xhc_encode_s16(round(60.0 * *(xhc->hal->spindle_rps)), p);
-*/
-/*	switch (*(xhc->hal->stepsize)) {
-	case    0: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
-	case    1: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1; break;
-	case    5: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_5; break;
-	case   10: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_10; break;
-	case   20: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_20; break;
-	case   30: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_30; break;
-	case   40: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_40; break;
-	case   50: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_50; break;
-	case  100: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_100; break;
-	case  500: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_500; break;
-	case 1000: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1000; break;
-	default:   //stepsize not supported on the display:
-			   buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
-	}
-*/
     buf[FLAGS_BYTE] = 0;
     if (*(xhc->hal->inch_icon)) {
         buf[FLAGS_BYTE] |= 0x80;
     }
-
+*/
 	// Multiplex to 7 USB transactions
 
 	p = buf;
-	for (packet=0; packet<7; packet++) {
+	for (packet=0; packet<8; packet++) {
 		for (i=0; i<8; i++) {
-			
 			if (i == 0) data[i+8*packet] = 6;
 			else data[i+8*packet] = *p++;
-			if (*p == 0) *p = 32;
+			if (i+8*packet > 60) {*p = 0x00;}
+			else {if (*p == 0) {*p = 0x20;}}
 //			printf("%02X ", *p);
 		}
 //	printf("\n");
 	}
 //printf("\n");
-//printf("%0X\n", *p);
 }
 
 void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
 {
-	unsigned char data[7*8];
+	unsigned char data[8*8];
 	int packet;
 
 	xhc_display_encode(xhc, data, sizeof(data));
 
-	for (packet=0; packet<7; packet++) {
+	for (packet=0; packet<8; packet++) {
 		int r = libusb_control_transfer(dev_handle,
 		              LIBUSB_DT_HID, //bmRequestType 0x21
 		              LIBUSB_REQUEST_SET_CONFIGURATION, //bRequest 0x09
@@ -961,10 +939,10 @@ int read_ini_file(char *filename)
 static void Usage(char *name)
 {
 	fprintf(stderr, "%s version %s by Frederic RIBLE (frible@teaser.fr)\n", name, PACKAGE_VERSION);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Usage: %s [-I button-cfg-file] [-h] [-H] [-s n]\n", name);
-    fprintf(stderr, " -I button-cfg-file: configuration file defining the MPG keyboard layout\n");
-    fprintf(stderr, " -h: usage (this)\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Usage: %s [-I button-cfg-file] [-h] [-H] [-s n]\n", name);
+	fprintf(stderr, " -I button-cfg-file: configuration file defining the MPG keyboard layout\n");
+	fprintf(stderr, " -h: usage (this)\n");
     fprintf(stderr, " -H: run in real-time HAL mode (run in simulation mode by default)\n");
     fprintf(stderr, " -x: wait for pendant detection before creating HAL pins\n");
     fprintf(stderr, " -s: step sequence (multiplied by 0.001 unit):\n");
