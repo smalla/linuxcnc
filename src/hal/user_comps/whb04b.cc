@@ -31,6 +31,7 @@
 #include <libusb.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <iomanip>
 
 #include <hal.h>
 #include <inifile.hh>
@@ -275,7 +276,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 */
 //	std::string text_positions[] = {"L1", "R11", "L12", "L20", "L28", "L36", "L44", "L52"};
 //					    x   y   z   a   b   c
-	unsigned int text_positions[] = {6, 12, 20, 28, 36, 44, 52, 0};
+	unsigned int text_positions[] = {10, 18, 26, 34, 42, 50, 52, 0};
 
 	assert(len == 8*8);
 
@@ -285,46 +286,46 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	*p++ = 0xFD; // Magic
 	*p++ = 0x07; // Cant tell whats this, on mach3 I saw this, but working without or any number
 
-	if (xhc->rate == rate_1x)	{ messages_to_display[0] = "1x";}
-	if (xhc->rate == rate_10x)	{ messages_to_display[0] = "10x";}
-	if (xhc->rate == rate_100x)	{ messages_to_display[0] = "100x";}
+	if (xhc->rate == rate_1x)	{ messages_to_display[0] = "0.001";}
+	if (xhc->rate == rate_10x)	{ messages_to_display[0] = "0.010";}
+	if (xhc->rate == rate_100x)	{ messages_to_display[0] = "0.100";}
 	if (xhc->rate == rate_mpg)	{ messages_to_display[0] = "MPG";}
 	if (xhc->rate == rate_lead)	{ messages_to_display[0] = "LEAD";}
 
 	if (xhc->axis == axis_off)	{ messages_to_display[0] = "MPG OFF";} 
 
 	message = "X"; //X:
-	position << *(xhc->hal->x_wc);
+	position << std::setprecision(5) << *(xhc->hal->x_wc);
 	message += (std::string) position.str();
 	messages_to_display[1] = message;
 	position.str("");
 
 	message = "Y"; //Y:
-	position << *(xhc->hal->y_wc);
+	position << std::setprecision(5) << *(xhc->hal->y_wc);
 	message += (std::string) position.str();
 	messages_to_display[2] = message;
 	position.str("");
 
 	message = "Z"; //Z:
-	position << *(xhc->hal->z_wc);
+	position << std::setprecision(5) << *(xhc->hal->z_wc);
 	message += (std::string) position.str();
 	messages_to_display[3] = message;
 	position.str("");
 
 	message = "A"; //A:
-	position << *(xhc->hal->a_wc);
+	position << std::setprecision(5) << *(xhc->hal->a_wc);
 	message += (std::string) position.str();
 	messages_to_display[4] = message;
 	position.str("");
 
 	message = "B"; //B:
-	position << *(xhc->hal->b_wc);
+	position << std::setprecision(5) << *(xhc->hal->b_wc);
 	message += (std::string) position.str();
 	messages_to_display[5] = message;
 	position.str("");
 
 	message = "C"; //C:
-	position << *(xhc->hal->c_wc);
+	position << std::setprecision(5) << *(xhc->hal->c_wc);
 	message += (std::string) position.str();
 	messages_to_display[6] = message;
 	position.str("");
@@ -333,13 +334,13 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	for (i = 0; i<messages_to_display.size(); i++){
 		for (char& c : messages_to_display[i]) {*p++ = c;}
 		display_position += messages_to_display[i].size();
-		printf("dp:%d smtd:%d \n",display_position, messages_to_display[i].size());
+//		printf("dp:%d smtd:%d \n",display_position, messages_to_display[i].size());
 		while ( display_position <= text_positions[i]){
 			*p++ = 0;
 			display_position++;
-		printf("dp:%d textpos:%d \n",display_position, text_positions[i]);
+//		printf("dp:%d textpos:%d \n",display_position, text_positions[i]);
 		}
-	printf("dp:%d 222textpos:%d \n",display_position, text_positions[i]);
+//	printf("dp:%d 222textpos:%d \n",display_position, text_positions[i]);
 //		*p++ = messages_to_display[i];
 //		while ( display_position < messages_to_display[i].size() + text_positions[i] ){
 //		    *p++ = 0;
