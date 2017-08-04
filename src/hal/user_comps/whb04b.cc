@@ -276,7 +276,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 */
 //	std::string text_positions[] = {"L1", "R11", "L12", "L20", "L28", "L36", "L44", "L52"};
 //					    x   y   z   a   b   c
-	unsigned int text_positions[] = {10, 18, 26, 34, 42, 50, 52, 0};
+	unsigned int text_positions[] = {10, 26, 0, 0, 0, 0, 0, 0};
 
 	assert(len == 8*8);
 
@@ -293,13 +293,86 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	if (xhc->rate == rate_lead)	{ messages_to_display[0] = "LEAD";}
 
 	if (xhc->axis == axis_off)	{ messages_to_display[0] = "MPG OFF";} 
+	if (xhc->axis == axis_x) 	{
+		message = "WX: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->x_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
 
-	message = "X"; //X:
-	position << std::setprecision(5) << *(xhc->hal->x_wc);
-	message += (std::string) position.str();
-	messages_to_display[1] = message;
-	position.str("");
+		message = "MX: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->x_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+	if (xhc->axis == axis_y) 	{
+		message = "WY: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->y_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
 
+		message = "MY: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->y_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+	if (xhc->axis == axis_z) 	{
+		message = "WZ: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->z_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
+
+		message = "MZ: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->z_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+	if (xhc->axis == axis_a) 	{
+		message = "WA: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->a_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
+
+		message = "MA: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->a_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+	if (xhc->axis == axis_b) 	{
+		message = "WB: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->b_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
+
+		message = "MB: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->b_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+	if (xhc->axis == axis_c) 	{
+		message = "WC: "; //Workpiece:
+		position << std::setprecision(6) << *(xhc->hal->c_wc);
+		message += (std::string) position.str();
+		messages_to_display[1] = message;
+		position.str("");
+
+		message = "MC: "; //Machine:
+		position << std::setprecision(6) << *(xhc->hal->c_mc);
+		message += (std::string) position.str();
+		messages_to_display[2] = message;
+		position.str("");
+	}
+
+/*
 	message = "Y"; //Y:
 	position << std::setprecision(5) << *(xhc->hal->y_wc);
 	message += (std::string) position.str();
@@ -329,7 +402,7 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	message += (std::string) position.str();
 	messages_to_display[6] = message;
 	position.str("");
-
+*/
 	display_position = 0;
 	for (i = 0; i<messages_to_display.size(); i++){
 		for (char& c : messages_to_display[i]) {*p++ = c;}
@@ -1107,8 +1180,9 @@ int main (int argc,char **argv)
 				tv.tv_usec = 30000;
 				r = libusb_handle_events_timeout(ctx, &tv);
 				compute_velocity(&xhc);
-			    if (simu_mode) linuxcnc_simu(&xhc);
+				if (simu_mode) linuxcnc_simu(&xhc);
 				handle_step(&xhc);
+				usleep(60000);
 				xhc_set_display(dev_handle, &xhc);
 			}
 			*(xhc.hal->connected) = 0;
@@ -1119,7 +1193,7 @@ int main (int argc,char **argv)
 			libusb_close(dev_handle);
 		}
 		else {
-			while (!do_exit) usleep(70000);
+			while (!do_exit) usleep(20000);
 		}
 		libusb_exit(ctx);
 	}
