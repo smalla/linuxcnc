@@ -417,7 +417,6 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 
 	}
 
-*/
 	// Multiplex to 7 USB transactions
 
 	p = buf;
