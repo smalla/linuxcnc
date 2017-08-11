@@ -414,19 +414,9 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 //		printf("dp:%d textpos:%d \n",display_position, text_positions[i]);
 		}
 //	printf("dp:%d 222textpos:%d \n",display_position, text_positions[i]);
-//		*p++ = messages_to_display[i];
-//		while ( display_position < messages_to_display[i].size() + text_positions[i] ){
-//		    *p++ = 0;
-//		}
-//		display_position = text_positions[i];
 
 	}
 
-/*
-    buf[FLAGS_BYTE] = 0;
-    if (*(xhc->hal->inch_icon)) {
-        buf[FLAGS_BYTE] |= 0x80;
-    }
 */
 	// Multiplex to 7 USB transactions
 
@@ -1163,10 +1153,10 @@ int main (int argc,char **argv)
 
 		*(xhc.hal->connected) = 1;
 
-	    if (!hal_ready_done && !simu_mode) {
-	    	hal_ready(hal_comp_id);
-	    	hal_ready_done = true;
-	    }
+		if (!hal_ready_done && !simu_mode) {
+			hal_ready(hal_comp_id);
+			hal_ready_done = true;
+		}
 
 		if (dev_handle) {
 			setup_asynch_transfer(dev_handle);
@@ -1182,7 +1172,7 @@ int main (int argc,char **argv)
 				compute_velocity(&xhc);
 				if (simu_mode) linuxcnc_simu(&xhc);
 				handle_step(&xhc);
-				usleep(60000);
+				usleep(100000);
 				xhc_set_display(dev_handle, &xhc);
 			}
 			*(xhc.hal->connected) = 0;

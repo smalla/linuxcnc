@@ -419,7 +419,7 @@ if { [namespace exists ::tp] && ([::tp::passnumber] == 0) } {
 }
 
 set libtag "LIB:"
-set cfg ${libtag}whb04b-layout1.cfg ;# default
+set cfg ${libtag}whb04b.cfg ;# default
 
 if ![info exists ::HAL(HALUI)] {
   err_exit "\[HAL\]HALUI is not set"
